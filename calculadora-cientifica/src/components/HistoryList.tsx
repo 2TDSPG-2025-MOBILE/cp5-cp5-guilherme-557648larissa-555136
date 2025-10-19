@@ -1,5 +1,3 @@
-// src/components/HistoryList.tsx
-
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 
