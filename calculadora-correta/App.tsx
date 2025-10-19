@@ -1,5 +1,3 @@
-// App.tsx
-
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import CalculatorScreen from './src/screens/CalculatorScreen';
