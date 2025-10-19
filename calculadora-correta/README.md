@@ -33,9 +33,7 @@ O projeto implementa todos os requisitos obrigatórios e bônus solicitados.
 
 ## 📸 Demonstração
 
-
-
-Uploading WhatsApp Video 2025-10-19 at 16.38.24.mp4…
+youtube https://youtube.com/shorts/tPtj8rbeEWs
 
 
 ## 🚀 Tecnologias Utilizadas
