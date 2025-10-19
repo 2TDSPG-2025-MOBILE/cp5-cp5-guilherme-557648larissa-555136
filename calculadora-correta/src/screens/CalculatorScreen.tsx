@@ -8,20 +8,36 @@ import HistoryList from '../components/HistoryList';
 import ButtonGrid from '../components/ButtonGrid';
 import { performCalculation, performScientificOperation } from '../utils/calculations';
 
+// Função para formatar os resultados (continua a mesma)
+const formatResult = (num: number): string => {
+    let numStr = String(num);
+    if (numStr.length > 6) {
+        if (Math.abs(num) >= 1_000_000) {
+            return num.toExponential(1);
+        } else if (numStr.includes('.')) {
+            return numStr.slice(0, 6);
+        }
+    }
+    return numStr;
+};
+
 const CalculatorScreen: React.FC = () => {
-  // --- ESTADOS INTERNOS PARA A LÓGICA ---
+  // Estados internos para a lógica
   const [currentNumber, setCurrentNumber] = useState<string>('0');
   const [lastNumber, setLastNumber] = useState<string>('');
   const [operation, setOperation] = useState<string | null>(null);
   
-  // --- NOVO ESTADO: A FONTE DA VERDADE PARA O VISOR ---
+  // Estado para o visor
   const [displayValue, setDisplayValue] = useState<string>('0');
 
-  // Estados dos bônus (não mudam)
+  // NOVO: A flag que vai resolver nosso problema de digitação.
+  const [isTypingNextNumber, setIsTypingNextNumber] = useState<boolean>(false);
+
+  // Estados dos bônus
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [history, setHistory] = useState<string[]>([]);
 
-  const toggleTheme = () => setIsDarkMode(previousState => !previousState);
+  const toggleTheme = () => setIsDarkMode((previousState: boolean) => !previousState);
 
   const colors = {
     background: isDarkMode ? '#1C1C1C' : '#F5F5F5',
@@ -33,25 +49,30 @@ const CalculatorScreen: React.FC = () => {
     functionButtonText: '#000000',
   };
 
-  // --- FUNÇÕES MODIFICADAS PARA ATUALIZAR O NOVO VISOR ---
-
   const handleClear = () => {
-    // Reseta todos os estados para o valor inicial
     setCurrentNumber('0');
     setLastNumber('');
     setOperation(null);
-    setDisplayValue('0'); // Limpa o visor
+    setDisplayValue('0');
+    setIsTypingNextNumber(false); // Reseta a flag
   };
 
+  // MODIFICADO: A lógica de digitação agora usa a nova flag.
   const handleNumberPress = (buttonValue: string) => {
-    // Atualiza o número que está sendo digitado
-    const newCurrentNumber = (currentNumber === '0' && buttonValue !== '.') || operation
-      ? buttonValue
-      : currentNumber + buttonValue;
+    if (currentNumber.length >= 6) return;
+
+    let newCurrentNumber;
+    // Se a flag estiver ativa, significa que este é o *primeiro* dígito do novo número.
+    if (isTypingNextNumber) {
+        newCurrentNumber = buttonValue === '.' ? '0.' : buttonValue;
+        setIsTypingNextNumber(false); // Desativa a flag para que os próximos dígitos sejam anexados.
+    } else {
+        // Se a flag não estiver ativa, anexa os dígitos normalmente.
+        newCurrentNumber = currentNumber === '0' && buttonValue !== '.' ? buttonValue : currentNumber + buttonValue;
+    }
     
     setCurrentNumber(newCurrentNumber);
 
-    // Constrói a string que aparecerá no visor
     if (operation) {
       setDisplayValue(`${lastNumber} ${operation} ${newCurrentNumber}`);
     } else {
@@ -59,64 +80,72 @@ const CalculatorScreen: React.FC = () => {
     }
   };
 
+  // MODIFICADO: Ativa a flag para indicar que o próximo número será digitado.
   const handleOperationPress = (buttonValue: string) => {
     if (currentNumber === 'Erro: Divisão por 0') return;
 
-    // Se já houver uma operação, calcula o resultado parcial
-    if (operation && lastNumber) {
+    if (operation && lastNumber && !isTypingNextNumber) {
         const partialResult = performCalculation(parseFloat(lastNumber), parseFloat(currentNumber), operation);
-        setLastNumber(String(partialResult));
-        setDisplayValue(`${String(partialResult)} ${buttonValue}`);
+        const formattedResult = formatResult(partialResult);
+        setLastNumber(formattedResult);
+        setDisplayValue(`${formattedResult} ${buttonValue}`);
     } else {
         setLastNumber(currentNumber);
         setDisplayValue(`${currentNumber} ${buttonValue}`);
     }
 
     setOperation(buttonValue);
-    setCurrentNumber('0'); // Prepara para o próximo número internamente
+    setIsTypingNextNumber(true); // ATIVA A FLAG!
   };
 
   const handleEquals = () => {
     if (!operation || !lastNumber) return;
 
     if (operation === '÷' && parseFloat(currentNumber) === 0) {
-      setDisplayValue('Erro: Divisão por 0');
-      setCurrentNumber('Erro: Divisão por 0');
+      setDisplayValue('Erro');
+      setCurrentNumber('Erro');
       setLastNumber('');
       setOperation(null);
+      setIsTypingNextNumber(false);
       return;
     }
 
     const result = performCalculation(parseFloat(lastNumber), parseFloat(currentNumber), operation);
-    const calculation = `${lastNumber} ${operation} ${currentNumber} = ${result}`;
+    const formattedResult = formatResult(result);
+    const calculation = `${lastNumber} ${operation} ${currentNumber} = ${formattedResult}`;
     setHistory([calculation, ...history.slice(0, 4)]);
 
-    // Atualiza o visor e o estado interno com o resultado final
-    setDisplayValue(String(result));
-    setCurrentNumber(String(result));
+    setDisplayValue(formattedResult);
+    setCurrentNumber(formattedResult);
     setLastNumber('');
     setOperation(null);
+    setIsTypingNextNumber(false); // Reseta a flag
   };
 
   const handleDelete = () => {
-    // A função DEL agora opera diretamente no que está sendo digitado
-    if (currentNumber !== '0' && currentNumber.length > 0 && !operation) {
-        const newCurrentNumber = currentNumber.slice(0, -1) || '0';
-        setCurrentNumber(newCurrentNumber);
+    // Só permite apagar o número que está sendo ativamente digitado.
+    if (!isTypingNextNumber && currentNumber !== '0') {
+      const newCurrentNumber = currentNumber.slice(0, -1) || '0';
+      setCurrentNumber(newCurrentNumber);
+      if (operation) {
+        setDisplayValue(`${lastNumber} ${operation} ${newCurrentNumber}`);
+      } else {
         setDisplayValue(newCurrentNumber);
+      }
     }
   };
   
   const handleScientificFunction = (func: string) => {
-    const num = parseFloat(displayValue); // Opera no número que está no visor
+    const num = parseFloat(displayValue);
     const result = performScientificOperation(num, func);
-    setDisplayValue(String(result));
-    setCurrentNumber(String(result));
+    const formattedResult = formatResult(result);
+    setDisplayValue(formattedResult);
+    setCurrentNumber(formattedResult);
     setLastNumber('');
     setOperation(null);
+    setIsTypingNextNumber(false); // Reseta a flag
   };
   
-  // Função "maestro" que decide qual ação tomar (não precisa de muitas mudanças)
   const handleButtonPress = (buttonValue: string) => {
     if (!isNaN(Number(buttonValue)) || buttonValue === '.') {
       handleNumberPress(buttonValue);
@@ -146,7 +175,6 @@ const CalculatorScreen: React.FC = () => {
             value={isDarkMode}
         />
       </View>
-      {/* O Display agora usa o novo estado `displayValue` */}
       <Display value={displayValue} textStyle={{ color: colors.text }} />
       <HistoryList 
         history={history} 
