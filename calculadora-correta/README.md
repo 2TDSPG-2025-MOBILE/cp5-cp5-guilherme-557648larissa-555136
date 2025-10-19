@@ -33,15 +33,10 @@ O projeto implementa todos os requisitos obrigatórios e bônus solicitados.
 
 ## 📸 Demonstração
 
-### Modo Claro
-*Tire um print do seu app no modo claro e adicione aqui! Substitua esta linha.*
-`[INSERIR SCREENSHOT DO MODO CLARO AQUI]`
 
-### Modo Escuro
-*Tire um print do seu app no modo escuro e adicione aqui! Substitua esta linha.*
-`[INSERIR SCREENSHOT DO MODO ESCURO AQUI]`
 
----
+Uploading WhatsApp Video 2025-10-19 at 16.38.24.mp4…
+
 
 ## 🚀 Tecnologias Utilizadas
 
